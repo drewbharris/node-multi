@@ -1,0 +1,42 @@
+#!/usr/bin/env node
+var app = require('express')(),
+    express = require('express'),
+    server = require('http').createServer(app),
+    io = require('socket.io').listen(server),
+    audioChannels = {
+        'too-much-to-say.mp3': 'Too Much To Say',
+        'get-lost.mp3': 'Get Lost',
+        'mr-bones.mp3': 'Mr. Bones'
+    };
+
+server.listen(80);
+app.use("/images", express.static(__dirname + "/images"));
+app.use("/static", express.static(__dirname + "/static"));
+
+app.get('/', function (req, res) {
+  var ua = req.header('user-agent');
+  if (/mobile/i.test(ua)) {
+      return res.sendfile(__dirname + '/slave_mobile.html');
+  }
+  return res.sendfile(__dirname + '/slave.html');
+});
+
+app.get('/master', function(req, res) {
+    res.sendfile(__dirname + '/master.html');
+});
+
+io.sockets.on('connection', function (socket) {
+  socket.emit('loadChannels', audioChannels);
+  socket.on('masterEvent', function (data) {
+    console.log(data);
+    socket.broadcast.emit('slaveEvent', { audioEvent: data.audioEvent });
+  });
+  socket.on('clientAdded', function (data) {
+    console.log(data);
+    socket.broadcast.emit('clientAdded', { item: data.item });
+  });
+  socket.on('clientRemoved', function (data) {
+    console.log(data);
+    socket.broadcast.emit('clientRemoved', { item: data.item });
+  });
+});
