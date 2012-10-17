@@ -10,13 +10,13 @@
             $(document).ready(function() {
                 var socket = io.connect('http://10.0.1.7');
                 socket.on('loadChannels', function (data) {
-                $.each(data, function(key, value) {
-                    $('#channelSelect')
-                    .append($("<option></option>")
-                        .attr("value", key)
-                        .text(value));
+                    $.each(data, function(value) {
+                        $('#channelSelect')
+                        .append($("<option></option>")
+                            .attr("value", value)
+                            .text(value));
+                        });
                     });
-                });
 
                 socket.on('slaveEvent', function (data) {
                     if (data.audioEvent == 'play') {
@@ -52,7 +52,7 @@
                             socket.emit('clientRemoved', {item: currentlyPlaying});
                         }
                         socket.emit('clientAdded', {item: str});
-                        $("#audioPlayer").get(0).setAttribute('src', 'static/'+str);
+                        $("#audioPlayer").get(0).setAttribute('src', 'static/audio/'+str);
                         $("#audioPlayer").trigger('load');
                         $("#audioPlayer").trigger('play');
                         setTimeout($("#audioPlayer").trigger('pause'), 10);

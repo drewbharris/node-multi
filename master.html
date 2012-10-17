@@ -28,15 +28,17 @@
                 });
             });
 
-          socket.on('clientAdded', function(data){
-            clients.push(data.item);
-            $("#clients").text(createClientsString(clients));
+          socket.on('clientList', function(data){
+            $("#clients").text(data.list);
           });
 
-          socket.on('clientRemoved', function(data){
-            clients.splice(clients.indexOf(data.item));
-            $("#clients").text(createClientsString(clients));
-          });
+          $(window).unload(function(){
+                if (currentlyPlaying) {
+                    socket.emit('clientRemoved', {item: currentlyPlaying});
+                }
+            });
+
+
         </script>
     </head>
     <body>

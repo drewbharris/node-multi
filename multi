@@ -1,13 +1,17 @@
 #!/usr/bin/env node
+
+"use strict";
+
 var app = require('express')(),
     express = require('express'),
     server = require('http').createServer(app),
     io = require('socket.io').listen(server),
-    audioChannels = {
-        'too-much-to-say.mp3': 'Too Much To Say',
-        'get-lost.mp3': 'Get Lost',
-        'mr-bones.mp3': 'Mr. Bones'
-    };
+    listening = [],
+    files = [],
+    fs = require('fs'),
+    when = require('when'),
+    sequence = require('sequence'),
+    globalSocket;
 
 server.listen(80);
 app.use("/images", express.static(__dirname + "/images"));
@@ -15,6 +19,7 @@ app.use("/static", express.static(__dirname + "/static"));
 
 app.get('/', function (req, res) {
   var ua = req.header('user-agent');
+  console.log(io.sockets.sockets);
   if (/mobile/i.test(ua)) {
       return res.sendfile(__dirname + '/slave_mobile.html');
   }
@@ -25,18 +30,33 @@ app.get('/master', function(req, res) {
     res.sendfile(__dirname + '/master.html');
 });
 
-io.sockets.on('connection', function (socket) {
-  socket.emit('loadChannels', audioChannels);
-  socket.on('masterEvent', function (data) {
-    console.log(data);
-    socket.broadcast.emit('slaveEvent', { audioEvent: data.audioEvent });
-  });
-  socket.on('clientAdded', function (data) {
-    console.log(data);
-    socket.broadcast.emit('clientAdded', { item: data.item });
-  });
-  socket.on('clientRemoved', function (data) {
-    console.log(data);
-    socket.broadcast.emit('clientRemoved', { item: data.item });
-  });
+addFiles().then(function(audioFiles){
+    files = audioFiles;
+    io.sockets.on('connection', function (socket) {
+        globalSocket = socket;
+        globalSocket.emit('loadChannels', files);
+        globalSocket.on('masterEvent', function (data) {
+            console.log(data);
+            globalSocket.broadcast.emit('slaveEvent', { audioEvent: data.audioEvent });
+        });
+        globalSocket.on('clientAdded', function (data) {
+            listening.push(data.item);
+            globalSocket.broadcast.emit('clientList', { list: listening });
+        });
+        globalSocket.on('clientRemoved', function (data) {
+            listening.splice(listening.indexOf(data.item));
+            globalSocket.broadcast.emit('clientList', { list: listening });
+        });
+    });
 });
+
+function addFiles(){
+    var d = when.defer();
+    fs.readdir(__dirname + '/static/audio', function(err, files){
+        if (!err){
+            console.log(files);
+            d.resolve(files);
+        }
+    });
+    return d.promise;
+}
