@@ -2,7 +2,8 @@
 	<head>
 	<meta name="viewport" content="user-scalable=no, width=device-width" />
 	<script type="text/javascript" src="https://ajax.googleapis.com/ajax/libs/jquery/1.8.2/jquery.min.js"></script>
-  <script type="text/javascript" src="/socket.io/socket.io.js"></script>
+  	<script type="text/javascript" src="/socket.io/socket.io.js"></script>
+	
 	<script>
 		var audioBuffer = null,
 			context = new webkitAudioContext(),
@@ -32,43 +33,53 @@
 		}
 
 		socket.on('slaveEvent', function (data) {
-      if (data.audioEvent == 'play') {
-          $("#info")
-              .text("playing")
-              .css("color", "green");
-          globalSource.noteOn(0);
 
-      }
-      else if (data.audioEvent == 'stop') {
-          $("#info")
-              .text("stopped")
-              .css("color", "red");
-          globalSource.noteOff(0);
+		// function testTrigger(){
+		// 	var data = {};
+		// 	var events = ['play', 'stop', 'load', 'error'];
+		// 	var ran = Math.random()*events.length >> 0;
+		// 	data.audioEvent = events[ran];
+			console.log(data, events, ran, data.audioEvent);
 
-      }
-      else if (data.audioEvent == 'load') {
-      		$("#info")
-              .text("loading...");
+			if (data.audioEvent == 'play') {
+			  $("#status")
+			      .text("playing")
+			      .attr("class", "playing");
+			  globalSource.noteOn(0);
 
-          $("#source")
-              .text(data.source);
+			}
+			else if (data.audioEvent == 'stop') {
+			 	$("#status")
+			 	    .text("stopped")
+			 	    .attr("class", "stopped");
+			  globalSource.noteOff(0);
 
-          currentFile = data.source;
-          loadAudio(currentFile);
-      }
-      else if (data.audioEvent == 'error') {
-      		$("#info")
-              .text("error: " + data.message);
-      }
-    });
+			}
+			else if (data.audioEvent == 'load') {
+				$("#status")
+				    .text("loading")
+				    .attr("class", "loading");
+			  $("#source")
+			      .text(data.source);
 
-    $(document).ready(function(){
-    	socket.emit('slaveEvent', {
-    		'audioEvent': 'requestSource'
+			  currentFile = data.source;
+			  loadAudio(currentFile);
+			}
+			else if (data.audioEvent == 'error') {
+			    $("#status")
+			        .text("error: "  + data.message)
+			        .attr("class", "error");
+			}
+		// }
     	});
-    })
 
-    $(window).bind('beforeunload',function(){
+	    $(document).ready(function(){
+	    	socket.emit('slaveEvent', {
+	    		'audioEvent': 'requestSource'
+	    	});
+	    })
+
+    	$(window).bind('beforeunload',function(){
 		    socket.emit('slaveEvent', {
 	    		'audioEvent': 'removeSource',
 	    		'source': currentFile
@@ -76,13 +87,50 @@
 		});
 
 	</script>
+	<style>
+		body{
+			margin: 0;
+			padding: 20px;
+			background-image: -webkit-gradient(linear, 0 0, 0 100%, from(#D2D4C6), to(#BEBFAD));
+			font-family: "Helvetica Neue", helvetica, sans-serif;
+		}
+		#container {
+			max-width: 280px;
+			margin: 0 auto;
+		}
+		#info > div {
+			margin: 20px 0;
+			text-align: center;
+			padding: 12px;
+			text-transform: uppercase;
+			font-size: 12px;
+			letter-spacing: 2px;
+			background: -webkit-gradient(linear, 0 0, 100% 100%, from(#0B0301), color-stop(.2, #2D2220), color-stop(.7, #0B0301), to(#2D2220));
+			color: #FFA304;
+			text-shadow: 0 1px 6px #FFA304;
+			border-radius: 3px;
+			box-shadow: 0 3px 4px black inset, 0 1px 1px rgba(255, 255, 255, .5);
+		}
+		#source {
+			font-size: 14px;
+			color: rgba(0, 0, 0, .5);
+			text-shadow: 0 1px rgba(255, 255, 255, .4);
+			text-align: center;
+		}
+	</style>
 	</head>
 	<body>
+		<div id="container">
 		<div id="info">
-
+			<div id="status" class="">...</div>
+			<!-- <div class="loading">loading</div>
+			<div class="playing">playing</div>
+			<div class="stopped">stopped</div>
+			<div class="error">error</div> -->
 		</div>
 		<div id="source">
-
+			
+		</div>
 		</div>
 	</body>
 </html>
