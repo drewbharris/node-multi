@@ -1,0 +1,12 @@
+{
+  "name": "multi",
+  "description": "Distributed audio performance using node.js, socket.io and the HTML5 WebAudio API.",
+  "version": "0.0.1",
+  "author": "Drew Harris",
+  "dependencies": {
+    "express": "3.0.0rc5",
+    "sequence": "2.2.1",
+    "when": "1.5.1",
+    "socket.io": "0.9.10"
+  }
+}
