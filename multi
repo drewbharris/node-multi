@@ -41,6 +41,28 @@ addFiles().then(function(files){
                     'sources': htmlString
                 }); 
             }
+            else if (data.audioEvent === 'reload') {
+                addFiles().then(function(files){
+                    audioFiles = files;
+                    var htmlString = buildClientsList();
+                    socket.broadcast.emit('slaveEvent', data); 
+                    socket.emit('masterEvent', { 
+                        'audioEvent': 'updateSources',
+                        'sources': htmlString
+                    }); 
+                })
+            }
+            else if (data.audioEvent === 'reload') {
+                addFiles().then(function(files){
+                    audioFiles = files;
+                    var htmlString = buildClientsList();
+                    socket.broadcast.emit('slaveEvent', data); 
+                    socket.emit('masterEvent', { 
+                        'audioEvent': 'updateSources',
+                        'sources': htmlString
+                    }); 
+                })
+            }
             else {
                 socket.broadcast.emit('slaveEvent', data);
             }

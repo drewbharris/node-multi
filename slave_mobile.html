@@ -1,37 +1,38 @@
 <html>
-	<head>
-	<meta name="viewport" content="user-scalable=no, width=device-width" />
-	<script type="text/javascript" src="https://ajax.googleapis.com/ajax/libs/jquery/1.8.2/jquery.min.js"></script>
+  <head>
+  <meta name="viewport" content="user-scalable=no, width=device-width" />
+  <script type="text/javascript" src="https://ajax.googleapis.com/ajax/libs/jquery/1.8.2/jquery.min.js"></script>
   <script type="text/javascript" src="/socket.io/socket.io.js"></script>
-	<script>
-		var audioBuffer = null,
-			context = new webkitAudioContext(),
-			socket = io.connect('http://192.168.1.167'),
-			globalSource = context.createBufferSource(),
-			currentFile;
+  <script>
+    var audioBuffer = null,
+      context = new webkitAudioContext(),
+      socket = io.connect('http://192.168.1.167'),
+      globalSource = context.createBufferSource(),
+      currentFile,
+      playingProgress;
 
-		function loadAudio(url) {
-		  var request = new XMLHttpRequest();
-		  request.open('GET', '/static/audio/' + url, true);
-		  request.responseType = 'arraybuffer';
-		  request.onload = function() {
-		    context.decodeAudioData(request.response, function(buffer) {
-		    	console.log('decode recieved');
-		      globalSource.buffer = buffer;
-		      globalSource.connect(context.destination); 
-		      socket.emit('slaveEvent', {
-		      	'audioEvent': 'loaded',
-		      	'source': currentFile
-		      });
-		      $("#info").text('loaded');
-		    }, function(err){
-		    	console.log(err);
-		    });
-		  }
-		  request.send();
-		}
+    function loadAudio(url) {
+      var request = new XMLHttpRequest();
+      request.open('GET', '/static/audio/' + url, true);
+      request.responseType = 'arraybuffer';
+      request.onload = function() {
+        context.decodeAudioData(request.response, function(buffer) {
+          console.log('decode recieved');
+          globalSource.buffer = buffer;
+          globalSource.connect(context.destination); 
+          socket.emit('slaveEvent', {
+            'audioEvent': 'loaded',
+            'source': currentFile
+          });
+          $("#info").text('loaded');
+        }, function(err){
+          console.log(err);
+        });
+      }
+      request.send();
+    }
 
-		socket.on('slaveEvent', function (data) {
+    socket.on('slaveEvent', function (data) {
       if (data.audioEvent == 'play') {
           $("#info")
               .text("playing")
@@ -46,8 +47,17 @@
           globalSource.noteOff(0);
 
       }
+      else if (data.audioEvent == 'reload') {
+          $("#info")
+              .text("ready")
+              .css("color", "black");
+          audioBuffer = null;
+          context = new webkitAudioContext();
+          globalSource = context.createBufferSource();
+          loadAudio(currentFile);
+      }
       else if (data.audioEvent == 'load') {
-      		$("#info")
+          $("#info")
               .text("loading...");
 
           $("#source")
@@ -57,32 +67,32 @@
           loadAudio(currentFile);
       }
       else if (data.audioEvent == 'error') {
-      		$("#info")
+          $("#info")
               .text("error: " + data.message);
       }
     });
 
     $(document).ready(function(){
-    	socket.emit('slaveEvent', {
-    		'audioEvent': 'requestSource'
-    	});
+      socket.emit('slaveEvent', {
+        'audioEvent': 'requestSource'
+      });
     })
 
     $(window).bind('beforeunload',function(){
-		    socket.emit('slaveEvent', {
-	    		'audioEvent': 'removeSource',
-	    		'source': currentFile
-	    	});
-		});
+        socket.emit('slaveEvent', {
+          'audioEvent': 'removeSource',
+          'source': currentFile
+        });
+    });
 
-	</script>
-	</head>
-	<body>
-		<div id="info">
+  </script>
+  </head>
+  <body>
+    <div id="info">
 
-		</div>
-		<div id="source">
+    </div>
+    <div id="source">
 
-		</div>
-	</body>
+    </div>
+  </body>
 </html>
