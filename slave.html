@@ -9,7 +9,11 @@
 			socket = io.connect('http://192.168.1.167'),
 			globalSource = context.createBufferSource(),
 			currentFile,
-			playingProgress;
+			playingProgress,
+			latency = 0,
+			latency_1,
+			latency_2,
+			latency_3;
 
 		function loadAudio(url) {
 		  var request = new XMLHttpRequest();
@@ -34,10 +38,15 @@
 
 		socket.on('slaveEvent', function (data) {
       if (data.audioEvent == 'play') {
-          $("#info")
+      		$("#info")
+              .text("pre-play")
+              .css("color", "blue");
+          setTimeout(function(){
+          	$("#info")
               .text("playing")
               .css("color", "green");
-          globalSource.noteOn(0);
+          	globalSource.noteOn(0);
+          }, 1000 - latency);
 
       }
       else if (data.audioEvent == 'stop') {
@@ -64,9 +73,35 @@
     });
 
     $(document).ready(function(){
+    	var currentTime = new Date().getTime();
+
+    	socket.emit('hello_1', {});
+
+    	socket.on('hello_1', function(){
+    		var newTime = new Date().getTime();
+    		latency_1 = newTime - currentTime;
+    		currentTime = new Date().getTime();
+    		socket.emit('hello_2', {});
+    	});
+
+    	socket.on('hello_2', function(){
+    		newTime = new Date().getTime();
+    		latency_2 = newTime - currentTime;
+    		currentTime = new Date().getTime();
+    		socket.emit('hello_3', {});
+    	});
+
+    	socket.on('hello_3', function(){
+    		newTime = new Date().getTime();
+    		latency_3 = newTime - currentTime;
+    		latency = Math.round((latency_1+latency_2+latency_3)/3);
+    		$("#latency").text('latency: ' + latency);
+    	});
+
     	socket.emit('slaveEvent', {
     		'audioEvent': 'requestSource'
     	});
+
     })
 
     $(window).bind('beforeunload',function(){
@@ -83,6 +118,9 @@
 
 		</div>
 		<div id="source">
+
+		</div>
+		<div id="latency">
 
 		</div>
 	</body>

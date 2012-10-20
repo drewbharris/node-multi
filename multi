@@ -33,6 +33,17 @@ addFiles().then(function(files){
     console.log(audioFiles);
     io.sockets.on('connection', function (socket) {
 
+        // for latency adjustment   
+        socket.on('hello_1', function(){
+            socket.emit('hello_1', {});
+        })
+        socket.on('hello_2', function(){
+            socket.emit('hello_2', {});
+        })
+        socket.on('hello_3', function(){
+            socket.emit('hello_3', {});
+        })
+
         socket.on('masterEvent', function (data) {
             if (data.audioEvent === 'requestClientList') {
                 var htmlString = buildClientsList();
@@ -81,12 +92,6 @@ addFiles().then(function(files){
                         'audioEvent': 'load',
                         'source': nextFile
                     }); 
-
-                    // console.log('we all full up');
-                    // socket.emit('slaveEvent', { 
-                    //     'audioEvent': 'error',
-                    //     'message': 'full'
-                    // });
                 }
             }
         });
