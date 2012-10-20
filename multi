@@ -34,33 +34,59 @@ addFiles().then(function(files){
     io.sockets.on('connection', function (socket) {
 
         socket.on('masterEvent', function (data) {
-            console.log(data);
-            socket.broadcast.emit('slaveEvent', data);
+            if (data.audioEvent === 'requestClientList') {
+                var htmlString = buildClientsList();
+                socket.emit('masterEvent', { 
+                    'audioEvent': 'updateSources',
+                    'sources': htmlString
+                }); 
+            }
+            else {
+                socket.broadcast.emit('slaveEvent', data);
+            }
         });
 
         socket.on('slaveEvent', function (data){
             console.log(data);
             if (data.audioEvent === 'loaded') {
-                audioFiles[data.source] = true;
+                audioFiles[data.source] = audioFiles[data.source] + 1;
+                var htmlString = buildClientsList();
+                socket.broadcast.emit('masterEvent', { 
+                    'audioEvent': 'updateSources',
+                    'sources': htmlString
+                }); 
             }
             else if (data.audioEvent === 'removeSource') {
-                audioFiles[data.source] = false;
+                audioFiles[data.source] = audioFiles[data.source] - 1;
+                var htmlString = buildClientsList();
+                socket.broadcast.emit('masterEvent', { 
+                    'audioEvent': 'updateSources',
+                    'sources': htmlString
+                }); 
             }
             else if (data.audioEvent == 'requestSource') {
                 var nextFile = getNextAudioFile();
                 console.log(nextFile);
                 if (nextFile){
+                    
                     socket.emit('slaveEvent', { 
                         'audioEvent': 'load',
                         'source': nextFile
-                    });            
+                    });  
+                    
                 }
                 else {
-                    console.log('we all full up');
+                    nextFile = getRandomAudioFile();
                     socket.emit('slaveEvent', { 
-                        'audioEvent': 'error',
-                        'message': 'full'
-                    });
+                        'audioEvent': 'load',
+                        'source': nextFile
+                    }); 
+
+                    // console.log('we all full up');
+                    // socket.emit('slaveEvent', { 
+                    //     'audioEvent': 'error',
+                    //     'message': 'full'
+                    // });
                 }
             }
         });
@@ -73,7 +99,7 @@ function addFiles(){
     fs.readdir(__dirname + '/static/audio', function(err, files){
         if (!err){
             files.forEach(function(file){
-                filesMap[file] = false;
+                filesMap[file] = 0;
             });
             d.resolve(filesMap);
         }
@@ -83,9 +109,30 @@ function addFiles(){
 
 function getNextAudioFile(){
     for (var file in audioFiles){
-        if (audioFiles[file] === false) {
+        if (audioFiles[file] === 0) {
             return file;
         }
     }
     return false;
+}
+
+function getRandomAudioFile() {
+    var result,
+        count = 0,
+        file;
+    for (file in audioFiles)
+        if (Math.random() < 1/++count)
+           result = file;
+    return result;
+}
+
+function buildClientsList(){
+    var htmlString = '',
+        file;
+    for (file in audioFiles) {
+        if (audioFiles[file]) {
+            htmlString = htmlString + '<br/>' + file + ' (' + audioFiles[file] + ')';
+        }
+    }
+    return htmlString;
 }

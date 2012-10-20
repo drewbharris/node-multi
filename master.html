@@ -17,16 +17,27 @@
           // }
 
           $(document).ready(function(){
-                $("#play").click(function(){
-                    socket.emit('masterEvent', { audioEvent: 'play' });
+              $("#play").click(function(){
+                socket.emit('masterEvent', { 
+                  'audioEvent': 'play' 
                 });
-                $("#pause").click(function(){
-                    socket.emit('masterEvent', { audioEvent: 'pause' });
+              });
+              $("#stop").click(function(){
+                socket.emit('masterEvent', { 
+                  'audioEvent': 'stop' 
                 });
-                $("#stop").click(function(){
-                    socket.emit('masterEvent', { audioEvent: 'stop' });
-                });
+              });
+              socket.emit('masterEvent', {
+                'audioEvent': 'requestClientList'
+              });
             });
+
+          socket.on('masterEvent', function(data){
+            console.log(data);
+            if (data.audioEvent === 'updateSources') {
+              $("#clients").html(data.sources);
+            }
+          });
 
           // socket.on('clientList', function(data){
           //   $("#clients").text(data.list);
