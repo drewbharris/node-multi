@@ -47,6 +47,15 @@
           globalSource.noteOff(0);
 
       }
+      else if (data.audioEvent == 'reload') {
+          $("#info")
+              .text("ready")
+              .css("color", "black");
+          audioBuffer = null;
+          context = new webkitAudioContext();
+          globalSource = context.createBufferSource();
+          loadAudio(currentFile);
+      }
       else if (data.audioEvent == 'load') {
       		$("#info")
               .text("loading...");

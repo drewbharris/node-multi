@@ -27,6 +27,11 @@
                   'audioEvent': 'stop' 
                 });
               });
+              $("#reload").click(function(){
+                socket.emit('masterEvent', { 
+                  'audioEvent': 'reload' 
+                });
+              });
               socket.emit('masterEvent', {
                 'audioEvent': 'requestClientList'
               });
@@ -47,8 +52,8 @@
     </head>
     <body>
         <input type="button" id="play" value="play"/>
-        <input type="button" id="pause" value="pause"/>
-        <input type="button" id="stop" value="stop"/><br>
+        <input type="button" id="stop" value="stop"/>
+        <input type="button" id="reload" value="reload"/><br>
         currently connected:
         <div id="clients">
 
