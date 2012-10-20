@@ -7,10 +7,10 @@ var app = require('express')(),
     server = require('http').createServer(app),
     io = require('socket.io').listen(server),
     listening = [],
-    files = [],
     fs = require('fs'),
     when = require('when'),
-    sequence = require('sequence');
+    sequence = require('sequence'),
+    audioFiles = {};
 
 server.listen(80);
 app.use("/images", express.static(__dirname + "/images"));
@@ -28,32 +28,64 @@ app.get('/master', function(req, res) {
     res.sendfile(__dirname + '/master.html');
 });
 
-addFiles().then(function(audioFiles){
-    files = audioFiles;
+addFiles().then(function(files){
+    audioFiles = files;
+    console.log(audioFiles);
     io.sockets.on('connection', function (socket) {
-        socket.emit('loadChannels', files);
+
         socket.on('masterEvent', function (data) {
             console.log(data);
-            socket.broadcast.emit('slaveEvent', { audioEvent: data.audioEvent });
+            socket.broadcast.emit('slaveEvent', data);
         });
-        // socket.on('clientAdded', function (data) {
-        //     listening.push(data.item);
-        //     socket.broadcast.emit('clientList', { list: listening });
-        // });
-        // socket.on('clientRemoved', function (data) {
-        //     listening.splice(listening.indexOf(data.item));
-        //     socket.broadcast.emit('clientList', { list: listening });
-        // });
+
+        socket.on('slaveEvent', function (data){
+            console.log(data);
+            if (data.audioEvent === 'loaded') {
+                audioFiles[data.source] = true;
+            }
+            else if (data.audioEvent === 'removeSource') {
+                audioFiles[data.source] = false;
+            }
+            else if (data.audioEvent == 'requestSource') {
+                var nextFile = getNextAudioFile();
+                console.log(nextFile);
+                if (nextFile){
+                    socket.emit('slaveEvent', { 
+                        'audioEvent': 'load',
+                        'source': nextFile
+                    });            
+                }
+                else {
+                    console.log('we all full up');
+                    socket.emit('slaveEvent', { 
+                        'audioEvent': 'error',
+                        'message': 'full'
+                    });
+                }
+            }
+        });
     });
 });
 
 function addFiles(){
-    var d = when.defer();
+    var d = when.defer(),
+        filesMap = {};
     fs.readdir(__dirname + '/static/audio', function(err, files){
         if (!err){
-            console.log(files);
-            d.resolve(files);
+            files.forEach(function(file){
+                filesMap[file] = false;
+            });
+            d.resolve(filesMap);
         }
     });
     return d.promise;
+}
+
+function getNextAudioFile(){
+    for (var file in audioFiles){
+        if (audioFiles[file] === false) {
+            return file;
+        }
+    }
+    return false;
 }

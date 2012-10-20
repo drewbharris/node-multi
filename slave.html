@@ -7,18 +7,23 @@
 		var audioBuffer = null,
 			context = new webkitAudioContext(),
 			socket = io.connect('http://192.168.1.167'),
-			globalSource = context.createBufferSource();
+			globalSource = context.createBufferSource(),
+			currentFile;
 
 		function loadAudio(url) {
 		  var request = new XMLHttpRequest();
-		  request.open('GET', url, true);
+		  request.open('GET', '/static/audio/' + url, true);
 		  request.responseType = 'arraybuffer';
 		  request.onload = function() {
 		    context.decodeAudioData(request.response, function(buffer) {
 		    	console.log('decode recieved');
 		      globalSource.buffer = buffer;
 		      globalSource.connect(context.destination); 
-		      $("#info").text('decoded');
+		      socket.emit('slaveEvent', {
+		      	'audioEvent': 'loaded',
+		      	'source': currentFile
+		      });
+		      $("#info").text('loaded');
 		    }, function(err){
 		    	console.log(err);
 		    });
@@ -31,26 +36,52 @@
           $("#info")
               .text("playing")
               .css("color", "green");
-
           globalSource.noteOn(0);
 
       }
       else if (data.audioEvent == 'stop') {
           $("#info")
-              .text("playing")
-              .css("color", "green");
+              .text("stopped")
+              .css("color", "red");
+          globalSource.noteOff(0);
 
-          globalSource.noteOn(0);
+      }
+      else if (data.audioEvent == 'load') {
+      		$("#info")
+              .text("loading...");
 
+          $("#source")
+              .text(data.source);
+
+          currentFile = data.source;
+          loadAudio(currentFile);
+      }
+      else if (data.audioEvent == 'error') {
+      		$("#info")
+              .text("error: " + data.message);
       }
     });
 
-		loadAudio('http://192.168.1.167/static/audio/oct17_track1.mp3');
+    $(document).ready(function(){
+    	socket.emit('slaveEvent', {
+    		'audioEvent': 'requestSource'
+    	});
+    })
+
+    $(window).bind('beforeunload',function(){
+		    socket.emit('slaveEvent', {
+	    		'audioEvent': 'removeSource',
+	    		'source': currentFile
+	    	});
+		});
 
 	</script>
 	</head>
 	<body>
 		<div id="info">
+
+		</div>
+		<div id="source">
 
 		</div>
 	</body>
