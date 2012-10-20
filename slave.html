@@ -1,90 +1,57 @@
 <html>
-    <head>
-        <script type="text/javascript" src="https://ajax.googleapis.com/ajax/libs/jquery/1.8.2/jquery.min.js"></script>
-        <script type="text/javascript" src="/socket.io/socket.io.js"></script>
-        <script type="text/javascript">
+	<head>
+	<meta name="viewport" content="user-scalable=no, width=device-width" />
+	<script type="text/javascript" src="https://ajax.googleapis.com/ajax/libs/jquery/1.8.2/jquery.min.js"></script>
+  <script type="text/javascript" src="/socket.io/socket.io.js"></script>
+	<script>
+		var audioBuffer = null,
+			context = new webkitAudioContext(),
+			socket = io.connect('http://192.168.1.167'),
+			globalSource = context.createBufferSource();
 
-            var currentlyPlaying = null;
+		function loadAudio(url) {
+		  var request = new XMLHttpRequest();
+		  request.open('GET', url, true);
+		  request.responseType = 'arraybuffer';
+		  request.onload = function() {
+		    context.decodeAudioData(request.response, function(buffer) {
+		    	console.log('decode recieved');
+		      globalSource.buffer = buffer;
+		      globalSource.connect(context.destination); 
+		      $("#info").text('decoded');
+		    }, function(err){
+		    	console.log(err);
+		    });
+		  }
+		  request.send();
+		}
 
-            $(document).ready(function() {
-                var socket = io.connect('http://10.0.1.7');
-                socket.on('loadChannels', function (data) {
-                    $.each(data, function(index, value) {
-                        console.log(value);
-                        $('#channelSelect')
-                        .append($("<option></option>")
-                            .attr("value", value)
-                            .text(value));
-                        });
-                    });
+		socket.on('slaveEvent', function (data) {
+      if (data.audioEvent == 'play') {
+          $("#info")
+              .text("playing")
+              .css("color", "green");
 
-                socket.on('slaveEvent', function (data) {
-                    if (data.audioEvent == 'play') {
-                        $("#status")
-                            .text("playing")
-                            .css("color", "green");
+          globalSource.noteOn(0);
 
-                        $("#audioPlayer").trigger('play');
+      }
+      else if (data.audioEvent == 'stop') {
+          $("#info")
+              .text("playing")
+              .css("color", "green");
 
-                    }
-                    else if (data.audioEvent == 'pause') {
-                        $("#status").text("paused")
-                            .text("paused")
-                            .css("color", "red");
+          globalSource.noteOn(0);
 
-                        $("#audioPlayer").trigger('pause');
-                    }
-                    else if (data.audioEvent == 'stop') {
-                        $("#status").text("stopped")
-                            .text("stopped")
-                            .css("color", "red");
+      }
+    });
 
-                        $("#audioPlayer").trigger('pause');
-                        $("#audioPlayer").get(0).currentTime = 0;
-                    }
-                });
+		loadAudio('http://192.168.1.167/static/audio/oct17_track1.mp3');
 
-                $("#channelSelect").change(function () {
-                    $("select option:selected").each(function () {
-                        str = "";
-                        str += $(this).val();
-                        if (currentlyPlaying) {
-                            socket.emit('clientRemoved', {item: currentlyPlaying});
-                        }
-                        socket.emit('clientAdded', {item: str});
-                        $("#audioPlayer").get(0).setAttribute('src', 'static/audio/'+str);
-                        $("#audioPlayer").trigger('load');
-                        $("#audioPlayer").trigger('play');
-                        setTimeout($("#audioPlayer").trigger('pause'), 10);
+	</script>
+	</head>
+	<body>
+		<div id="info">
 
-                        currentlyPlaying = str;
-                    });
-                })
-                .change();
-
-                $("#mobileLoad").click(function(){
-                    $("#audioPlayer").trigger('load');
-                    $("#audioPlayer").trigger('play');
-                    setTimeout($("#audioPlayer").trigger('pause'), 10);
-                });
-            });
-            $(window).unload(function(){
-                if (currentlyPlaying) {
-                    socket.emit('clientRemoved', {item: currentlyPlaying});
-                }
-            });
-        </script>
-    </head>
-    <body>
-        <div id="status">
-            stopped
-        </div>
-        <select id="channelSelect">
-            <option value="" >--select--</option>
-        </select><br>
-        <input type="button" id="mobileLoad" value="Mobile Load (required on iPad)"/><br>
-        <audio id="audioPlayer" controls="controls">
-
-        </audio>
-    </body>
+		</div>
+	</body>
 </html>

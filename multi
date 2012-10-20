@@ -10,8 +10,7 @@ var app = require('express')(),
     files = [],
     fs = require('fs'),
     when = require('when'),
-    sequence = require('sequence'),
-    globalSocket;
+    sequence = require('sequence');
 
 server.listen(80);
 app.use("/images", express.static(__dirname + "/images"));
@@ -19,7 +18,6 @@ app.use("/static", express.static(__dirname + "/static"));
 
 app.get('/', function (req, res) {
   var ua = req.header('user-agent');
-  console.log(io.sockets.sockets);
   if (/mobile/i.test(ua)) {
       return res.sendfile(__dirname + '/slave_mobile.html');
   }
@@ -33,20 +31,19 @@ app.get('/master', function(req, res) {
 addFiles().then(function(audioFiles){
     files = audioFiles;
     io.sockets.on('connection', function (socket) {
-        globalSocket = socket;
-        globalSocket.emit('loadChannels', files);
-        globalSocket.on('masterEvent', function (data) {
+        socket.emit('loadChannels', files);
+        socket.on('masterEvent', function (data) {
             console.log(data);
-            globalSocket.broadcast.emit('slaveEvent', { audioEvent: data.audioEvent });
+            socket.broadcast.emit('slaveEvent', { audioEvent: data.audioEvent });
         });
-        globalSocket.on('clientAdded', function (data) {
-            listening.push(data.item);
-            globalSocket.broadcast.emit('clientList', { list: listening });
-        });
-        globalSocket.on('clientRemoved', function (data) {
-            listening.splice(listening.indexOf(data.item));
-            globalSocket.broadcast.emit('clientList', { list: listening });
-        });
+        // socket.on('clientAdded', function (data) {
+        //     listening.push(data.item);
+        //     socket.broadcast.emit('clientList', { list: listening });
+        // });
+        // socket.on('clientRemoved', function (data) {
+        //     listening.splice(listening.indexOf(data.item));
+        //     socket.broadcast.emit('clientList', { list: listening });
+        // });
     });
 });
 
