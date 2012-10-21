@@ -121,7 +121,10 @@ function addFiles(){
     fs.readdir(__dirname + '/static/audio', function(err, files){
         if (!err){
             files.forEach(function(file){
-                filesMap[file] = 0;
+                if (file !== '.DS_Store') {
+                    filesMap[file] = 0;  
+                }
+                
             });
             d.resolve(filesMap);
         }

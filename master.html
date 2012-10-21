@@ -5,17 +5,7 @@
         <script>
           var socket = io.connect('http://192.168.1.167'),
             clients = [];
-
-          // function createClientsString(client){
-          //   var clientsString = "";
-          //   for (var i=0; i<clients.length; i++) {
-          //       if (clients[i]) {
-          //           clientsString = clientsString + clients[i] + "\n";
-          //       }
-          //   }
-          //   return clientsString;
-          // }
-
+            
           $(document).ready(function(){
               $("#play").click(function(){
                 socket.emit('masterEvent', { 
