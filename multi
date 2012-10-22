@@ -25,6 +25,7 @@ server.listen(8080);
 app.use("/images", express.static(__dirname + "/images"));
 app.use("/static", express.static(__dirname + "/static"));
 
+// client route
 app.get('/', function (req, res) {
   var ua = req.header('user-agent');
   if (/mobile/i.test(ua)) {
@@ -33,15 +34,19 @@ app.get('/', function (req, res) {
   return res.sendfile(__dirname + '/slave.html');
 });
 
+// server route
 app.get('/master', function(req, res) {
     res.sendfile(__dirname + '/master.html');
 });
 
+// add files and set up socket
 addFiles().then(function(files){
     audioFiles = files;
     logListeners();
     io.sockets.on('connection', function (socket) {
+        // master event
         socket.on('masterEvent', function (data) {
+            // master is requesting a list of slaves
             if (data.audioEvent === 'requestClientList') {
                 var htmlString = buildClientsList();
                 socket.emit('masterEvent', {
@@ -49,6 +54,7 @@ addFiles().then(function(files){
                     'sources': htmlString
                 });
             }
+            // master is requesting a re-initialization of slaves
             else if (data.audioEvent === 'reload') {
                 addFiles().then(function(files){
                     audioFiles = files;
@@ -60,25 +66,31 @@ addFiles().then(function(files){
                     });
                 });
             }
-            else if (data.audioEvent === 'logSockets') {
-                console.log(Object.keys(io.sockets.sockets));
-            }
+            // master is sending a message to be broadcast
+            //  to slaves
             else {
                 socket.broadcast.emit('slaveEvent', data);
             }
         });
-
+        // slave event
         socket.on('slaveEvent', function (data){
             console.log(data);
+            // slave has loaded audio and is ready to play
             if (data.audioEvent === 'loaded') {
-                logListeners();
-                audioFiles[data.source] = audioFiles[data.source] + 1;
-                htmlString = buildClientsList();
-                socket.broadcast.emit('masterEvent', {
-                    'audioEvent': 'updateSources',
-                    'sources': htmlString
+                // do something
+            }
+            // slave has recieved a play event from master
+            //  and is requesting a latency-adjusted play event
+            else if (data.audioEvent === 'requestPlay') {
+                // get this slave's latency
+                socket.get('latency', function(err, latency){
+                    socket.emit('slaveEvent', {
+                        'audioEvent': 'latencyAdjustedPlay',
+                        'timeout': 1000 - latency
+                    });
                 });
             }
+            // slave has closed the window or disconnected
             else if (data.audioEvent === 'removeSource') {
                 audioFiles[data.source] = audioFiles[data.source] - 1;
                 htmlString = buildClientsList();
@@ -87,16 +99,15 @@ addFiles().then(function(files){
                     'sources': htmlString
                 });
             }
-            else if (data.audioEvent == 'requestSource') {
+            // slave is requesting a source to load
+            else if (data.audioEvent === 'requestSource') {
                 var nextFile = getNextAudioFile();
                 console.log(nextFile);
                 if (nextFile){
-
                     socket.emit('slaveEvent', {
                         'audioEvent': 'load',
                         'source': nextFile
                     });
-
                 }
                 else {
                     nextFile = getRandomAudioFile();
@@ -105,17 +116,28 @@ addFiles().then(function(files){
                         'source': nextFile
                     });
                 }
+                audioFiles[data.source] = audioFiles[data.source] + 1;
+                htmlString = buildClientsList();
+                socket.broadcast.emit('masterEvent', {
+                    'audioEvent': 'updateSources',
+                    'sources': htmlString
+                });
             }
+            // set latency for this connected slave
             else if (data.audioEvent === 'setLatency') {
                 // callback to client here?
                 socket.set('latency', data.latency, function(){});
             }
         });
+        // this is a simple call-respond to figure out socket latency
+        socket.on('latencyEvent', function(data){
+            socket.emit('latencyEvent', data);
+        });
     });
 });
 
+// populate the files array
 function addFiles(){
-
     var d = when.defer(),
         filesMap = {},
         fileString;
@@ -146,6 +168,7 @@ function addFiles(){
     return d.promise;
 }
 
+// get next unloaded audio file
 function getNextAudioFile(){
     for (var file in audioFiles){
         if (audioFiles[file] === 0) {
