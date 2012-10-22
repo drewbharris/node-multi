@@ -3,11 +3,11 @@
   <link rel="stylesheet" type="text/css" href="static/style_mobile.css">
   <meta name="viewport" content="user-scalable=no, width=device-width" />
   <script type="text/javascript" src="static/jquery.min.js"></script>
-  <script type="text/javascript" src="/socket.io/socket.io.js"></script>
+    <script type="text/javascript" src="/socket.io/socket.io.js"></script>
   <script>
     var audioBuffer = null,
       context = new webkitAudioContext(),
-      socket = io.connect('http://localhost:8080'),
+      socket = io.connect('http://10.0.1.7:8080'),
       globalSource = context.createBufferSource(),
       currentFile,
       currentTime = [],
@@ -18,7 +18,7 @@
 
     function loadAudio(url) {
       var request = new XMLHttpRequest();
-      request.open('GET', '/static/audio/' + url, true);
+      request.open('GET', url, true);
       request.responseType = 'arraybuffer';
       request.onload = function() {
         context.decodeAudioData(request.response, function(buffer) {
@@ -41,8 +41,7 @@
     $(document).ready(function(){
 
       $("#connection")
-          .text("connected to __server__")
-          .css("color", "black");
+          .text("connected to __server__");
 
       // figure out latency to server
       for (var i=0; i<10; i++) {
@@ -64,28 +63,32 @@
       });
       socket.on('slaveEvent', function (data) {
         if (data.audioEvent == 'play') {
-            $("#info")
-                .text("requesting play")
-                .css("color", "black");
-            socket.emit('slaveEvent', {
-              'audioEvent': 'requestPlay'
-            });
+            // $("#info")
+            //     .text("requesting play")
+            //     .css("color", "black");
+            // socket.emit('slaveEvent', {
+            //   'audioEvent': 'requestPlay'
+            // });
+          $("#info")
+            .text("playing")
+            .css("color", "green");
+            globalSource.noteOn(0);
         }
-        else if (data.audioEvent == 'latencyAdjustedPlay') {
-            console.log(data.timeout);
-            setTimeout(function(){
-              $("#info")
-                .text("playing")
-                .css("color", "green");
-              globalSource.noteOn(0);
-            }, data.timeout);
-        }
+
+        // else if (data.audioEvent == 'latencyAdjustedPlay') {
+        //     console.log(data.timeout);
+        //     setTimeout(function(){
+        //       $("#info")
+        //         .text("playing")
+        //         .css("color", "green");
+        //         globalSource.noteOn(0);
+        //     }, data.timeout);
+        // }
         else if (data.audioEvent == 'stop') {
             $("#info")
                 .text("stopped")
                 .css("color", "red");
             globalSource.noteOff(0);
-
         }
         else if (data.audioEvent == 'reload') {
             connected = false;
@@ -189,12 +192,13 @@
   <body>
     <div id="wrapper">
       <div id="header">
-        multi
+        <span id="title">multi</span>
+        (<span id="connection"></span>)
       </div>
       <div id="content">
         <div id="connection"></div>
-        <div id="info"></div>
-        <div id="source"></div>
+        <div id="info_wrap">$ <span id="info"></span></div>
+        audio file: <span id="source"></span><br>
         <input type="button" id="disconnect" value="disconnect"/>
         <input type="button" id="reload" value="reload"/>
       </div>

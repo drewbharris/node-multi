@@ -1,205 +1,209 @@
 <html>
-	<head>
-	<link rel="stylesheet" type="text/css" href="static/style.css">
-	<meta name="viewport" content="user-scalable=no, width=device-width" />
-	<script type="text/javascript" src="static/jquery.min.js"></script>
+  <head>
+  <link rel="stylesheet" type="text/css" href="static/style.css">
+  <meta name="viewport" content="user-scalable=no, width=device-width" />
+  <script type="text/javascript" src="static/jquery.min.js"></script>
     <script type="text/javascript" src="/socket.io/socket.io.js"></script>
-	<script>
-		var audioBuffer = null,
-			context = new webkitAudioContext(),
-			socket = io.connect('http://localhost:8080'),
-			globalSource = context.createBufferSource(),
-			currentFile,
-			currentTime = [],
-			newTime,
-			latencyValues = [],
-			avgLatency,
-			connected = false;
+  <script>
+    var audioBuffer = null,
+      context = new webkitAudioContext(),
+      socket = io.connect('http://10.0.1.7:8080'),
+      globalSource = context.createBufferSource(),
+      currentFile,
+      currentTime = [],
+      newTime,
+      latencyValues = [],
+      avgLatency,
+      connected = false;
 
-		function loadAudio(url) {
-		  var request = new XMLHttpRequest();
-		  request.open('GET', url, true);
-		  request.responseType = 'arraybuffer';
-		  request.onload = function() {
-		    context.decodeAudioData(request.response, function(buffer) {
-		    	console.log('decode recieved');
-		      globalSource.buffer = buffer;
-		      globalSource.connect(context.destination);
-		      connected = true;
-		      socket.emit('slaveEvent', {
-		      	'audioEvent': 'loaded',
-		      	'source': currentFile
-		      });
-		      $("#info").text('loaded');
-		    }, function(err){
-		    	console.log(err);
-		    });
-		  }
-		  request.send();
-		}
+    function loadAudio(url) {
+      var request = new XMLHttpRequest();
+      request.open('GET', url, true);
+      request.responseType = 'arraybuffer';
+      request.onload = function() {
+        context.decodeAudioData(request.response, function(buffer) {
+          console.log('decode recieved');
+          globalSource.buffer = buffer;
+          globalSource.connect(context.destination);
+          connected = true;
+          socket.emit('slaveEvent', {
+            'audioEvent': 'loaded',
+            'source': currentFile
+          });
+          $("#info").text('loaded');
+        }, function(err){
+          console.log(err);
+        });
+      }
+      request.send();
+    }
 
     $(document).ready(function(){
 
-    	$("#connection")
+      $("#connection")
           .text("connected to __server__");
 
-    	// figure out latency to server
-    	for (var i=0; i<10; i++) {
-    		currentTime[i] = new Date().getTime();
-	    	socket.emit('latencyEvent', {
-	    		'number': i
-	    	});
-    	}
-    	socket.on('latencyEvent', function(data){
-    		newTime = new Date().getTime();
-	        latencyValues[data.number] = newTime - currentTime[data.number];
-	        avgLatency = Math.round(latencyValues.slice(1).avg());
-	        if (data.number == 9) {
-	        	socket.emit('slaveEvent', {
-	        		'audioEvent': 'setLatency',
-	        		'latency': avgLatency
-	        	});
-	        }
-    	});
-    	socket.on('slaveEvent', function (data) {
-	      if (data.audioEvent == 'play') {
-	          $("#info")
-	              .text("requesting play")
-	              .css("color", "black");
-	          socket.emit('slaveEvent', {
-	            'audioEvent': 'requestPlay'
-	          });
-	      }
-	      else if (data.audioEvent == 'latencyAdjustedPlay') {
-	      	  console.log(data.timeout);
-	      	  setTimeout(function(){
-	      	  	$("#info")
-	              .text("playing")
-	              .css("color", "green");
-	      	  }, data.timeout);
-	          globalSource.noteOn(data.timeout);
-	      }
-	      else if (data.audioEvent == 'stop') {
-	          $("#info")
-	              .text("stopped")
-	              .css("color", "red");
-	          globalSource.noteOff(0);
+      // figure out latency to server
+      for (var i=0; i<10; i++) {
+        currentTime[i] = new Date().getTime();
+        socket.emit('latencyEvent', {
+          'number': i
+        });
+      }
+      socket.on('latencyEvent', function(data){
+        newTime = new Date().getTime();
+          latencyValues[data.number] = newTime - currentTime[data.number];
+          avgLatency = Math.round(latencyValues.slice(1).avg());
+          if (data.number == 9) {
+            socket.emit('slaveEvent', {
+              'audioEvent': 'setLatency',
+              'latency': avgLatency
+            });
+          }
+      });
+      socket.on('slaveEvent', function (data) {
+        if (data.audioEvent == 'play') {
+            // $("#info")
+            //     .text("requesting play")
+            //     .css("color", "black");
+            // socket.emit('slaveEvent', {
+            //   'audioEvent': 'requestPlay'
+            // });
+          $("#info")
+            .text("playing")
+            .css("color", "green");
+            globalSource.noteOn(0);
+        }
 
-	      }
-	      else if (data.audioEvent == 'reload') {
-	      	  connected = false;
-	          $("#info")
-	              .text("ready")
-	              .css("color", "black");
-	          audioBuffer = null;
-	          // context = new webkitAudioContext();
-	          globalSource = context.createBufferSource();
-	          socket.emit('slaveEvent', {
-		    		'audioEvent': 'removeSource',
-		    		'source': currentFile
-		    	});
-	          socket.emit('slaveEvent', {
-		    		'audioEvent': 'requestSource'
-		    	});
-	      }
-	      else if (data.audioEvent == 'load') {
+        // else if (data.audioEvent == 'latencyAdjustedPlay') {
+        //     console.log(data.timeout);
+        //     setTimeout(function(){
+        //       $("#info")
+        //         .text("playing")
+        //         .css("color", "green");
+        //         globalSource.noteOn(0);
+        //     }, data.timeout);
+        // }
+        else if (data.audioEvent == 'stop') {
+            $("#info")
+                .text("stopped")
+                .css("color", "red");
+            globalSource.noteOff(0);
+        }
+        else if (data.audioEvent == 'reload') {
+            connected = false;
+            $("#info")
+                .text("ready")
+                .css("color", "black");
+            audioBuffer = null;
+            // context = new webkitAudioContext();
+            globalSource = context.createBufferSource();
+            socket.emit('slaveEvent', {
+            'audioEvent': 'removeSource',
+            'source': currentFile
+          });
+            socket.emit('slaveEvent', {
+            'audioEvent': 'requestSource'
+          });
+        }
+        else if (data.audioEvent == 'load') {
 
-      		  $("#info")
+            $("#info")
                   .text("loading...");
 
-	          $("#source")
-	              .text(data.source);
+            $("#source")
+                .text(data.source);
 
-	          currentFile = data.source;
-	          loadAudio(currentFile);
-	      }
-	      else if (data.audioEvent == 'error') {
-	      		$("#info")
-	              .text("error: " + data.message);
-	      }
-	    });
+            currentFile = data.source;
+            loadAudio(currentFile);
+        }
+        else if (data.audioEvent == 'error') {
+            $("#info")
+                .text("error: " + data.message);
+        }
+      });
 
-    	socket.emit('slaveEvent', {
-    		'audioEvent': 'requestSource'
-    	});
+      socket.emit('slaveEvent', {
+        'audioEvent': 'requestSource'
+      });
 
-    	$("#reload").click(function(){
-	        $("#info")
-	              .text("ready")
-	              .css("color", "black");
-	          audioBuffer = null;
-	          // context = new webkitAudioContext();
-	          globalSource = context.createBufferSource();
-	          if (connected) {
-	          socket.emit('slaveEvent', {
-		    		'audioEvent': 'removeSource',
-		    		'source': currentFile
-		    	});
-	          }
-	          else {
-	          	connected = true;
-	          }
-	          socket.emit('slaveEvent', {
-		    		'audioEvent': 'requestSource'
-		    	});
-	      });
+      $("#reload").click(function(){
+          $("#info")
+                .text("ready")
+                .css("color", "black");
+            audioBuffer = null;
+            // context = new webkitAudioContext();
+            globalSource = context.createBufferSource();
+            if (connected) {
+            socket.emit('slaveEvent', {
+            'audioEvent': 'removeSource',
+            'source': currentFile
+          });
+            }
+            else {
+              connected = true;
+            }
+            socket.emit('slaveEvent', {
+            'audioEvent': 'requestSource'
+          });
+        });
 
-    	$("#disconnect").click(function(){
-    		connected = false;
-	        $("#info")
-	              .text("ready")
-	              .css("color", "black");
-	          audioBuffer = null;
-	          // context = new webkitAudioContext();
-	          globalSource = context.createBufferSource();
-	          socket.emit('slaveEvent', {
-		    		'audioEvent': 'removeSource',
-		    		'source': currentFile
-		    	});
-	      });
+      $("#disconnect").click(function(){
+        connected = false;
+          $("#info")
+                .text("ready")
+                .css("color", "black");
+            audioBuffer = null;
+            // context = new webkitAudioContext();
+            globalSource = context.createBufferSource();
+            socket.emit('slaveEvent', {
+            'audioEvent': 'removeSource',
+            'source': currentFile
+          });
+        });
     })
 
     $(window).bind('beforeunload',function(){
-    	if (connected) {
-    		socket.emit('slaveEvent', {
-	    		'audioEvent': 'removeSource',
-	    		'source': currentFile
-	    	});
-    	}
+      if (connected) {
+        socket.emit('slaveEvent', {
+          'audioEvent': 'removeSource',
+          'source': currentFile
+        });
+      }
 
-	});
+  });
 
-	Array.prototype.avg = function() {
-		var av = 0,
-			cnt = 0,
-			len = this.length,
-			e,
-			i;
-		for (var i = 0; i < len; i++) {
-			e = +this[i];
-			if(!e && this[i] !== 0 && this[i] !== '0') e--;
-			if (this[i] == e) {av += e; cnt++;}
-		}
-		return av/cnt;
-	}
+  Array.prototype.avg = function() {
+    var av = 0,
+      cnt = 0,
+      len = this.length,
+      e,
+      i;
+    for (var i = 0; i < len; i++) {
+      e = +this[i];
+      if(!e && this[i] !== 0 && this[i] !== '0') e--;
+      if (this[i] == e) {av += e; cnt++;}
+    }
+    return av/cnt;
+  }
 
-	</script>
-	</head>
-	<body>
-		<div id="wrapper">
-			<div id="header">
-				<span id="title">multi</span>
-				(<span id="connection"></span>)
-			</div>
-			<div id="content">
-				<div id="connection"></div>
-				<div id="info_wrap">$ <span id="info"></span></div>
-				audio file: <span id="source"></span><br>
-				<input type="button" id="disconnect" value="disconnect"/>
-				<input type="button" id="reload" value="reload"/>
-			</div>
+  </script>
+  </head>
+  <body>
+    <div id="wrapper">
+      <div id="header">
+        <span id="title">multi</span>
+        (<span id="connection"></span>)
+      </div>
+      <div id="content">
+        <div id="connection"></div>
+        <div id="info_wrap">$ <span id="info"></span></div>
+        audio file: <span id="source"></span><br>
+        <input type="button" id="disconnect" value="disconnect"/>
+        <input type="button" id="reload" value="reload"/>
+      </div>
 
-		</div>
+    </div>
 
-	</body>
+  </body>
 </html>
