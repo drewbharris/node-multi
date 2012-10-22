@@ -6,7 +6,7 @@
 	<script>
 		var audioBuffer = null,
 			context = new webkitAudioContext(),
-			socket = io.connect('http://192.168.1.167'),
+			socket = io.connect('http://localhost:8080'),
 			globalSource = context.createBufferSource(),
 			currentFile,
 			playingProgress;
@@ -19,7 +19,7 @@
 		    context.decodeAudioData(request.response, function(buffer) {
 		    	console.log('decode recieved');
 		      globalSource.buffer = buffer;
-		      globalSource.connect(context.destination); 
+		      globalSource.connect(context.destination);
 		      socket.emit('slaveEvent', {
 		      	'audioEvent': 'loaded',
 		      	'source': currentFile

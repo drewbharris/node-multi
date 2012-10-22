@@ -10,9 +10,18 @@ var app = require('express')(),
     fs = require('fs'),
     when = require('when'),
     sequence = require('sequence'),
-    audioFiles = {};
+    audioFiles = {},
+    config = {},
+    htmlString;
 
-server.listen(80);
+try {
+    config = require('./config').config;
+}
+catch(err) {
+    console.log(err);
+}
+
+server.listen(8080);
 app.use("/images", express.static(__dirname + "/images"));
 app.use("/static", express.static(__dirname + "/static"));
 
@@ -30,38 +39,29 @@ app.get('/master', function(req, res) {
 
 addFiles().then(function(files){
     audioFiles = files;
-    console.log(audioFiles);
+    logListeners();
     io.sockets.on('connection', function (socket) {
-
         socket.on('masterEvent', function (data) {
             if (data.audioEvent === 'requestClientList') {
                 var htmlString = buildClientsList();
-                socket.emit('masterEvent', { 
+                socket.emit('masterEvent', {
                     'audioEvent': 'updateSources',
                     'sources': htmlString
-                }); 
+                });
             }
             else if (data.audioEvent === 'reload') {
                 addFiles().then(function(files){
                     audioFiles = files;
                     var htmlString = buildClientsList();
-                    socket.broadcast.emit('slaveEvent', data); 
-                    socket.emit('masterEvent', { 
+                    socket.broadcast.emit('slaveEvent', data);
+                    socket.emit('masterEvent', {
                         'audioEvent': 'updateSources',
                         'sources': htmlString
-                    }); 
-                })
+                    });
+                });
             }
-            else if (data.audioEvent === 'reload') {
-                addFiles().then(function(files){
-                    audioFiles = files;
-                    var htmlString = buildClientsList();
-                    socket.broadcast.emit('slaveEvent', data); 
-                    socket.emit('masterEvent', { 
-                        'audioEvent': 'updateSources',
-                        'sources': htmlString
-                    }); 
-                })
+            else if (data.audioEvent === 'logSockets') {
+                console.log(Object.keys(io.sockets.sockets));
             }
             else {
                 socket.broadcast.emit('slaveEvent', data);
@@ -71,64 +71,78 @@ addFiles().then(function(files){
         socket.on('slaveEvent', function (data){
             console.log(data);
             if (data.audioEvent === 'loaded') {
+                logListeners();
                 audioFiles[data.source] = audioFiles[data.source] + 1;
-                var htmlString = buildClientsList();
-                socket.broadcast.emit('masterEvent', { 
+                htmlString = buildClientsList();
+                socket.broadcast.emit('masterEvent', {
                     'audioEvent': 'updateSources',
                     'sources': htmlString
-                }); 
+                });
             }
             else if (data.audioEvent === 'removeSource') {
                 audioFiles[data.source] = audioFiles[data.source] - 1;
-                var htmlString = buildClientsList();
-                socket.broadcast.emit('masterEvent', { 
+                htmlString = buildClientsList();
+                socket.broadcast.emit('masterEvent', {
                     'audioEvent': 'updateSources',
                     'sources': htmlString
-                }); 
+                });
             }
             else if (data.audioEvent == 'requestSource') {
                 var nextFile = getNextAudioFile();
                 console.log(nextFile);
                 if (nextFile){
-                    
-                    socket.emit('slaveEvent', { 
+
+                    socket.emit('slaveEvent', {
                         'audioEvent': 'load',
                         'source': nextFile
-                    });  
-                    
+                    });
+
                 }
                 else {
                     nextFile = getRandomAudioFile();
-                    socket.emit('slaveEvent', { 
+                    socket.emit('slaveEvent', {
                         'audioEvent': 'load',
                         'source': nextFile
-                    }); 
-
-                    // console.log('we all full up');
-                    // socket.emit('slaveEvent', { 
-                    //     'audioEvent': 'error',
-                    //     'message': 'full'
-                    // });
+                    });
                 }
+            }
+            else if (data.audioEvent === 'setLatency') {
+                // callback to client here?
+                socket.set('latency', data.latency, function(){});
             }
         });
     });
 });
 
 function addFiles(){
+
     var d = when.defer(),
-        filesMap = {};
-    fs.readdir(__dirname + '/static/audio', function(err, files){
-        if (!err){
-            files.forEach(function(file){
-                if (file !== '.DS_Store') {
-                    filesMap[file] = 0;  
-                }
-                
-            });
-            d.resolve(filesMap);
-        }
-    });
+        filesMap = {},
+        fileString;
+    if (config.useRemoteFiles &&
+            config.remotePath &&
+            config.remoteFiles) {
+        console.log('Loading remote files from config.js');
+        config.remoteFiles.forEach(function(file){
+            fileString = config.remotePath + file;
+            filesMap[fileString] = 0;
+        });
+        d.resolve(filesMap);
+    }
+    else {
+        console.log('Attempting to load local files from ./static/audio');
+        fs.readdir(__dirname + '/static/audio', function(err, files){
+            if (!err){
+                files.forEach(function(file){
+                    if (file !== '.DS_Store') {
+                        filesMap[file] = 0;
+                    }
+
+                });
+                d.resolve(filesMap);
+            }
+        });
+    }
     return d.promise;
 }
 
@@ -160,4 +174,10 @@ function buildClientsList(){
         }
     }
     return htmlString;
+}
+
+function logListeners(){
+    for (var file in audioFiles){
+        console.log(file + ': ' + audioFiles[file] + ' listeners.');
+    }
 }
