@@ -18,9 +18,7 @@ TODO: fix latency issues (possibly via multiple ping and latency compensation), 
 
 ### Latency
 
-There are significant issues with clients beginning play at different times, sometimes up to 500 ms.  I'm actively working on this.  Currently, when a client loads the page it will phone home to the server 10 times and calculate the average latency.  When the master sends a play event, each client requests a latency-adjusted play event from the server, which is currently 1000 ms minus the individual recorded client latency.
-
-I don't know if that is will work, it's kind of a brain puzzle and I'm pretty new to Javascript.  If you have suggestions, let me know.
+There are significant issues with clients beginning play at different times, sometimes up to 500 ms.  I'm actively working on this.  ~~Currently, when a client loads the page it will phone home to the server 10 times and calculate the average latency.  When the master sends a play event, each client requests a latency-adjusted play event from the server, which is currently 1000 ms minus the individual recorded client latency.~~  Currently nothing is being done to account for latency.  Working on it.
 
 ### Static file serving
 
