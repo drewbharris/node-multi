@@ -77,7 +77,12 @@ addFiles().then(function(files){
             console.log(data);
             // slave has loaded audio and is ready to play
             if (data.audioEvent === 'loaded') {
-                // do something
+                audioFiles[data.source] = audioFiles[data.source] + 1;
+                htmlString = buildClientsList();
+                socket.broadcast.emit('masterEvent', {
+                    'audioEvent': 'updateSources',
+                    'sources': htmlString
+                });
             }
             // slave has recieved a play event from master
             //  and is requesting a latency-adjusted play event
@@ -116,12 +121,7 @@ addFiles().then(function(files){
                         'source': nextFile
                     });
                 }
-                audioFiles[data.source] = audioFiles[data.source] + 1;
-                htmlString = buildClientsList();
-                socket.broadcast.emit('masterEvent', {
-                    'audioEvent': 'updateSources',
-                    'sources': htmlString
-                });
+
             }
             // set latency for this connected slave
             else if (data.audioEvent === 'setLatency') {

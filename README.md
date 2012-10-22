@@ -26,3 +26,7 @@ I don't know if that is will work, it's kind of a brain puzzle and I'm pretty ne
 
 I had some problems with Express getting overwhelmed serving large mp3s to many clients.
 Might be better to use remote files, hence the included config.example.js.
+
+## License
+
+
