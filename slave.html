@@ -1,8 +1,9 @@
 <html>
 	<head>
+	<link rel="stylesheet" type="text/css" href="static/style.css">
 	<meta name="viewport" content="user-scalable=no, width=device-width" />
 	<script type="text/javascript" src="static/jquery.min.js"></script>
-  <script type="text/javascript" src="/socket.io/socket.io.js"></script>
+    <script type="text/javascript" src="/socket.io/socket.io.js"></script>
 	<script>
 		var audioBuffer = null,
 			context = new webkitAudioContext(),
@@ -186,17 +187,20 @@
 	</script>
 	</head>
 	<body>
-		<div id="connection">
+		<div id="wrapper">
+			<div id="header">
+				<span id="title">multi</span>
+				(<span id="connection"></span>)
+			</div>
+			<div id="content">
+				<div id="connection"></div>
+				<div id="info_wrap">$ <span id="info"></span></div>
+				audio file: <span id="source"></span><br>
+				<input type="button" id="disconnect" value="disconnect"/>
+				<input type="button" id="reload" value="reload"/>
+			</div>
 
 		</div>
 
-		<div id="info">
-
-		</div>
-		<div id="source">
-
-		</div>
-		<input type="button" id="disconnect" value="disconnect"/>
-		<input type="button" id="reload" value="reload"/>
 	</body>
 </html>

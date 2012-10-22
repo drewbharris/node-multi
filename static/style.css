@@ -1,0 +1,30 @@
+html {
+	height: 100%;
+}
+
+body {
+	font-family: helvetica, arial;
+	height: 100%;
+}
+
+#wrapper {
+	width: 600px;
+	margin: 0 auto;
+}
+
+#header {
+	padding: 20px 5px 5px 5px;
+	background-color: #D6D6D6;
+}
+
+#title {
+	font-size: 3em;
+}
+
+#content {
+	padding: 10px 0px 20px 0px;
+}
+
+#info_wrap {
+	padding: 0px 0px 0px 0px;
+}
