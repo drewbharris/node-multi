@@ -18,7 +18,7 @@
 
 		function loadAudio(url) {
 		  var request = new XMLHttpRequest();
-		  request.open('GET', '/static/audio/' + url, true);
+		  request.open('GET', url, true);
 		  request.responseType = 'arraybuffer';
 		  request.onload = function() {
 		    context.decodeAudioData(request.response, function(buffer) {
@@ -41,8 +41,7 @@
     $(document).ready(function(){
 
     	$("#connection")
-          .text("connected to __server__")
-          .css("color", "black");
+          .text("connected to __server__");
 
     	// figure out latency to server
     	for (var i=0; i<10; i++) {
@@ -77,8 +76,8 @@
 	      	  	$("#info")
 	              .text("playing")
 	              .css("color", "green");
-	            globalSource.noteOn(0);
 	      	  }, data.timeout);
+	          globalSource.noteOn(data.timeout);
 	      }
 	      else if (data.audioEvent == 'stop') {
 	          $("#info")

@@ -3,8 +3,9 @@ html {
 }
 
 body {
-	font-family: helvetica, arial;
+	font-family: sans-serif;
 	height: 100%;
+	margin: 0;
 }
 
 #wrapper {
@@ -13,16 +14,24 @@ body {
 }
 
 #header {
+	color: #E6E6E6;
+	text-shadow: rgba(0, 0, 0, 0.8) 0px -1px 0px;
 	padding: 20px 5px 5px 5px;
-	background-color: #D6D6D6;
+	background-color: rgba(46, 50, 52, 0.901961);
+	border-radius: 5px;
+	box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.15) inset,0 2px 0 rgba(255, 255, 255, 0.25) inset;
+	/*background: -webkit-linear-gradient(top, #FCFCFC, #F2F2F2);*/
 }
 
 #title {
 	font-size: 3em;
+	text-shadow: 0 1px black;
 }
 
 #content {
 	padding: 10px 0px 20px 0px;
+	background-color: #F8F8F8;
+	border-radius: 5px;
 }
 
 #info_wrap {

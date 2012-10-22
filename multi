@@ -157,7 +157,8 @@ function addFiles(){
             if (!err){
                 files.forEach(function(file){
                     if (file !== '.DS_Store') {
-                        filesMap[file] = 0;
+                        fileString = '/static/audio/' + file;
+                        filesMap[fileString] = 0;
                     }
 
                 });
